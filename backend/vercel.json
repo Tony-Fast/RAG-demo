@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/v1/(.*)",
+      "dest": "api/$1.py"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "api/$1.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/"
+    }
+  ],
+  "env": {
+    "APP_PASSWORD": "demo123",
+    "CORS_ORIGINS": "https://kef-ragdemo.top",
+    "NODE_ENV": "production"
+  },
+  "domains": [
+    "kef-ragdemo.top"
+  ]
+}
