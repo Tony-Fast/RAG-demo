@@ -3,7 +3,7 @@ API Router Configuration
 """
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import chat, document, config, health
+from app.api.v1.endpoints import chat, document, config, health, token
 
 api_router = APIRouter()
 
@@ -30,4 +30,10 @@ api_router.include_router(
     config.router,
     prefix="/config",
     tags=["Config"]
+)
+
+api_router.include_router(
+    token.router,
+    prefix="/token",
+    tags=["Token"]
 )

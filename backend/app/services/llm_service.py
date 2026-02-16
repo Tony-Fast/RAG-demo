@@ -10,6 +10,7 @@ from openai import OpenAI, AsyncOpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from app.core.config import settings
+from app.services.token_usage_monitor import token_usage_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,10 @@ class LLMService:
             usage = response.usage
             tokens_used = usage.total_tokens if usage else None
             
+            # Record token usage
+            if tokens_used:
+                token_usage_monitor.add_token_usage(tokens_used)
+            
             logger.info(f"LLM generation completed in {response_time:.2f}s, tokens: {tokens_used}")
             
             return {
@@ -144,6 +149,10 @@ class LLMService:
             usage = response.usage
             tokens_used = usage.total_tokens if usage else None
             
+            # Record token usage
+            if tokens_used:
+                token_usage_monitor.add_token_usage(tokens_used)
+            
             return {
                 "content": content,
                 "model": self.model,
@@ -193,6 +202,13 @@ class LLMService:
             async for chunk in stream:
                 if chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
+                
+            # Record token usage from the final chunk
+            if hasattr(stream, 'usage') and stream.usage:
+                tokens_used = stream.usage.total_tokens
+                if tokens_used:
+                    token_usage_monitor.add_token_usage(tokens_used)
+                    logger.info(f"Stream generation completed, tokens: {tokens_used}")
                     
         except Exception as e:
             logger.error(f"Stream generation failed: {e}")

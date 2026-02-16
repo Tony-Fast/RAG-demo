@@ -72,15 +72,32 @@ class RAGService:
             ]
             
             if not filtered_results:
-                # No relevant documents found
+                # No relevant documents found, use LLM directly
+                logger.info("No relevant documents found, using LLM directly")
+                
+                # Build prompt without context
+                prompt = llm_service.build_rag_prompt(question, [], context)
+                
+                # Generate answer using LLM
+                generation_start = time.time()
+                generation_result = llm_service.generate(
+                    prompt=prompt,
+                    temperature=temp,
+                    max_tokens=tokens
+                )
+                generation_time = time.time() - generation_start
+                
+                total_time = time.time() - start_time
+                
                 return {
                     "question": question,
-                    "answer": "抱歉，我在当前知识库中没有找到与您问题相关的信息。您可以尝试：\n1. 检查问题是否清晰明确\n2. 上传更多相关的文档到知识库\n3. 调整问题的表述方式",
+                    "answer": generation_result["content"],
                     "sources": [],
-                    "model": settings.DEEPSEEK_MODEL,
-                    "response_time": time.time() - start_time,
+                    "model": generation_result["model"],
+                    "response_time": total_time,
                     "retrieval_time": retrieval_time,
-                    "tokens_used": None
+                    "generation_time": generation_time,
+                    "tokens_used": generation_result.get("tokens_used")
                 }
             
             # Step 2: Build context from search results

@@ -18,6 +18,7 @@ interface ChatAreaProps {
   onDocSelect: (doc: Document) => void;
   onDocDelete: (docId: string) => void;
   documents: Document[];
+  onCreateSession: () => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -28,7 +29,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   currentDoc,
   onDocSelect,
   onDocDelete,
-  documents
+  documents,
+  onCreateSession
 }) => {
   console.log('=== ChatArea 组件 ===');
   console.log('接收到的消息列表长度:', messages.length);
@@ -119,8 +121,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const data = await chatApi.query(query, currentDoc?.id);
       const transformedResult: QueryResult = {
         id: Date.now().toString(),
-        question: data.question,
-        answer: data.answer,
+        question: data.question || query,
+        answer: data.answer || '未获取到回答，请重试',
         chunks: (data.sources || []).map((s: any) => ({
           id: s.id || '',
           document_id: s.document_id || '',
@@ -131,12 +133,23 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         })),
         model: data.model || 'unknown',
         response_time: data.response_time || 0,
-        tokens_used: data.tokens_used
+        tokens_used: data.tokens_used || 0
       };
       setQueryResults([transformedResult]);
     } catch (err: any) {
       console.error('Query failed:', err);
       setError(err.message || '查询失败，请检查后端服务是否运行');
+      // 添加错误结果到查询结果中，确保用户能够看到错误信息
+      const errorResult: QueryResult = {
+        id: Date.now().toString(),
+        question: query,
+        answer: err.message || '查询失败，请检查后端服务是否运行',
+        chunks: [],
+        model: 'error',
+        response_time: 0,
+        tokens_used: 0
+      };
+      setQueryResults([errorResult]);
     } finally {
       setIsRagLoading(false);
     }
@@ -160,7 +173,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // 清空对话历史
   const handleClearHistory = () => {
     if (window.confirm('确定要清空当前对话历史吗？此操作不可恢复。')) {
-      setMessages([]);
       if (currentSession) {
         localStorage.setItem(`chatMessages_${currentSession}`, JSON.stringify([]));
       }
@@ -255,6 +267,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           
           {/* 新建对话按钮 */}
           <button
+            onClick={onCreateSession}
             className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
           >
             + 新建对话

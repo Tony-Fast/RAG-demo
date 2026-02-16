@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, RotateCcw, Settings, Database, Sparkles, FileText, Info } from 'lucide-react';
+import { X, Save, RotateCcw, Settings, Database, Sparkles, FileText, Info, Activity } from 'lucide-react';
 import { chatApi } from '../lib/api';
+import TokenUsageMonitor from './TokenUsageMonitor';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -34,7 +35,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
     system_prompt: '你是一个专业的问答助手，请基于提供的文档内容回答用户的问题。'
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'retrieval' | 'generation' | 'system'>('retrieval');
+  const [activeTab, setActiveTab] = useState<'retrieval' | 'generation' | 'system' | 'token'>('retrieval');
 
   useEffect(() => {
     loadConfig();
@@ -81,6 +82,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   const tabs = [
     { id: 'retrieval', label: '检索设置', icon: Database },
     { id: 'generation', label: '生成设置', icon: Sparkles },
+    { id: 'token', label: 'Token监控', icon: Activity },
     { id: 'system', label: '系统信息', icon: Info }
   ] as const;
 
@@ -281,6 +283,26 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
                 <p className="mt-1 text-xs text-gray-400">
                   定义 AI 助手的角色和行为
                 </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'token' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Token使用监控</h3>
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                  <TokenUsageMonitor />
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-700 mb-2">监控说明</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• 系统每日Token使用上限为 2,000,000 单位</li>
+                  <li>• 数据每30秒自动刷新一次</li>
+                  <li>• 可点击"刷新"按钮手动更新数据</li>
+                  <li>• 当使用量接近上限时，系统会显示警告信息</li>
+                </ul>
               </div>
             </div>
           )}

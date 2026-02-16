@@ -18,7 +18,7 @@ app_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(app_dir))
 
 from app.core.config import settings
-from app.core.middleware import password_protection_middleware, api_key_protection_middleware
+from app.core.middleware import api_key_protection_middleware
 from app.api.v1.router import api_router
 
 # Define FastAPI application
@@ -61,7 +61,6 @@ app.add_middleware(
 )
 
 # Add custom middleware
-app.middleware("http")(password_protection_middleware)
 app.middleware("http")(api_key_protection_middleware)
 
 # Include API routers

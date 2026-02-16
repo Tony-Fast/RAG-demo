@@ -22,22 +22,9 @@ class ApiClient {
       }
     })
     
-    // 添加请求拦截器，添加密码验证头
+    // 添加请求拦截器
     this.client.interceptors.request.use(
       (config) => {
-        // 获取认证状态
-        const authData = localStorage.getItem('chatAuth')
-        if (authData) {
-          try {
-            const parsedAuth = JSON.parse(authData)
-            if (parsedAuth.authenticated) {
-              // 添加密码验证头
-              config.headers['X-App-Password'] = 'demo123'
-            }
-          } catch (error) {
-            console.error('Failed to parse auth data:', error)
-          }
-        }
         return config
       },
       (error) => {
@@ -69,7 +56,7 @@ class ApiClient {
           errorMessage = error.message || '上传失败'
         }
         
-        const enhancedError = new Error(errorMessage)
+        const enhancedError = new Error(errorMessage) as any
         enhancedError.originalError = error
         enhancedError.code = error.code
         
@@ -125,9 +112,12 @@ class ApiClient {
         context: context
       })
       return response.data
-    } catch (error) {
+    } catch (error: any) {
       console.error('Query error:', error)
-      throw error
+      // 增强错误信息
+      const errorMessage = error.message || '查询失败，请检查网络连接或后端服务'
+      const enhancedError = new Error(errorMessage)
+      throw enhancedError
     }
   }
   
@@ -141,6 +131,36 @@ class ApiClient {
   
   async healthCheck(): Promise<any> {
     return this.client.get('/health')
+  }
+  
+  async getTokenUsage(): Promise<any> {
+    try {
+      const response = await this.client.get('/token/usage')
+      return response.data
+    } catch (error) {
+      console.error('Failed to get token usage:', error)
+      throw error
+    }
+  }
+  
+  async getTokenHistory(): Promise<any> {
+    try {
+      const response = await this.client.get('/token/history')
+      return response.data
+    } catch (error) {
+      console.error('Failed to get token history:', error)
+      throw error
+    }
+  }
+  
+  async resetTokenUsage(): Promise<any> {
+    try {
+      const response = await this.client.post('/token/reset')
+      return response.data
+    } catch (error) {
+      console.error('Failed to reset token usage:', error)
+      throw error
+    }
   }
 }
 

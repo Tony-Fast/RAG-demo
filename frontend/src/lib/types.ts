@@ -140,6 +140,22 @@ export interface HealthCheck {
   timestamp: string
 }
 
+export interface SearchPathChild {
+  content: string
+  document: string
+  score: number
+  children?: SearchPathChild[]
+}
+
+export interface SearchPath {
+  content: string
+  children?: SearchPathChild[]
+}
+
+export interface SearchPaths {
+  search_path: SearchPath[]
+}
+
 export interface QueryResult {
   id: string
   question: string
@@ -148,6 +164,7 @@ export interface QueryResult {
   model: string
   response_time: number
   tokens_used?: number
+  search_paths?: SearchPaths
 }
 
 export interface QueryChunk {

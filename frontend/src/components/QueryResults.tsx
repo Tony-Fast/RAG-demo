@@ -90,14 +90,14 @@ const QueryResults: React.FC<QueryResultsProps> = ({ results, isLoading }) => {
                 <span>检索路径</span>
               </div>
               <div className="border rounded-xl p-4 bg-white">
-                {result.search_paths.search_path && result.search_paths.search_path.map((path, pathIndex) => (
+                {result.search_paths.search_path && result.search_paths.search_path.map((path: any, pathIndex: number) => (
                   <div key={pathIndex} className="space-y-2">
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-xs text-gray-500 mb-1">查询</div>
                       <div className="text-sm font-medium">{path.content}</div>
                     </div>
                     <div className="ml-6 space-y-2">
-                      {path.children && path.children.map((child, childIndex) => (
+                      {path.children && path.children.map((child: any, childIndex: number) => (
                         <div key={childIndex} className="bg-blue-50 p-3 rounded-lg border border-blue-100">
                           <div className="flex justify-between items-center mb-1">
                             <div className="text-xs text-blue-600">{child.document}</div>
