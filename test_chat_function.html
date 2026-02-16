@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对话功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #666;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+        .log {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            align-self: flex-end;
+        }
+        .ai-message {
+            background-color: #f5f5f5;
+            align-self: flex-start;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💬 对话功能测试</h1>
+        
+        <div class="form-group">
+            <label for="messageInput">输入测试消息：</label>
+            <input type="text" id="messageInput" placeholder="输入测试消息" value="你好，这是一个测试消息">
+        </div>
+        
+        <button onclick="testChat()">测试对话</button>
+        
+        <div class="chat-container" id="chatContainer">
+            <!-- 对话消息将显示在这里 -->
+        </div>
+        
+        <div id="result" class="result"></div>
+        
+        <div id="log" class="log">日志将显示在这里...</div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+        
+        function showResult(message, isSuccess) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
+        }
+        
+        function addMessage(content, isUser) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function clearChat() {
+            document.getElementById('chatContainer').innerHTML = '';
+        }
+        
+        async function testChat() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value;
+            
+            if (!message) {
+                showResult('请输入测试消息', false);
+                return;
+            }
+            
+            clearLog();
+            clearChat();
+            showResult('正在发送消息...', false);
+            
+            try {
+                log('开始对话测试...');
+                log(`测试消息: ${message}`);
+                
+                // 添加用户消息
+                addMessage(message, true);
+                
+                log('发送对话请求...');
+                
+                // 发送对话请求
+                const response = await fetch(API_BASE_URL + '/chat/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: message,
+                        stream: false,
+                        return_paths: true
+                    })
+                });
+                
+                log(`响应状态码: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                log(`响应数据: ${JSON.stringify(data)}`);
+                
+                // 添加AI消息
+                addMessage(data.answer, false);
+                
+                showResult(`
+                    对话测试成功！
+                    问题: ${data.question}
+                    回答: ${data.answer.substring(0, 100)}...
+                    模型: ${data.model}
+                    响应时间: ${data.response_time} 秒
+                `, true);
+                
+                log('对话测试完成，成功！');
+                
+            } catch (error) {
+                log(`错误: ${error.message}`);
+                log(`错误类型: ${error.name}`);
+                showResult(`对话测试失败: ${error.message}`, false);
+            }
+        }
+        
+        // 页面加载时测试API连接
+        window.onload = function() {
+            log('页面加载完成');
+            log(`API基础URL: ${API_BASE_URL}`);
+            log('准备就绪，可以开始测试');
+        };
+    </script>
+</body>
+</html>

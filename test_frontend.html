@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端文件上传测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>前端文件上传测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 测试文件上传</h2>
+        <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt,.xlsx,.xls">
+        <button onclick="testFileUpload()">上传文件</button>
+        <div id="uploadResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 测试对话功能</h2>
+        <input type="text" id="messageInput" placeholder="输入测试消息" style="width: 300px; padding: 10px;">
+        <button onclick="testChat()">发送消息</button>
+        <div id="chatResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 测试API连接</h2>
+        <button onclick="testApiConnection()">测试连接</button>
+        <div id="connectionResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+        
+        // 创建axios实例
+        const client = axios.create({
+            baseURL: API_BASE_URL,
+            timeout: 60000,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        // 添加请求拦截器
+        client.interceptors.request.use(
+            (config) => {
+                console.log('Sending request to:', config.url);
+                return config;
+            },
+            (error) => {
+                console.error('Request error:', error);
+                return Promise.reject(error);
+            }
+        );
+        
+        // 添加响应拦截器
+        client.interceptors.response.use(
+            (response) => {
+                console.log('Received response from:', response.config?.url);
+                console.log('Response status:', response.status);
+                return response;
+            },
+            (error) => {
+                console.error('API Error:', error.response?.data || error.message);
+                return Promise.reject(error);
+            }
+        );
+        
+        // 测试文件上传
+        async function testFileUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                document.getElementById('uploadResult').innerHTML = '<div class="error">请选择一个文件</div>';
+                return;
+            }
+            
+            const resultDiv = document.getElementById('uploadResult');
+            resultDiv.innerHTML = '<div>正在上传文件...</div>';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // 不手动设置Content-Type，让axios自动处理
+                const response = await client.post('/documents/upload', formData);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">文件上传成功！</div>
+                    <div>文档ID: ${response.data.document_id}</div>
+                    <div>文件名: ${response.data.filename}</div>
+                    <div>文件大小: ${response.data.file_size} 字节</div>
+                    <div>处理时间: ${response.data.processing_time} 秒</div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">文件上传失败！</div>
+                    <div>错误信息: ${error.message}</div>
+                    <div>详细信息: ${JSON.stringify(error.response?.data || {})}</div>
+                `;
+            }
+        }
+        
+        // 测试对话功能
+        async function testChat() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value;
+            
+            if (!message) {
+                document.getElementById('chatResult').innerHTML = '<div class="error">请输入测试消息</div>';
+                return;
+            }
+            
+            const resultDiv = document.getElementById('chatResult');
+            resultDiv.innerHTML = '<div>正在发送消息...</div>';
+            
+            try {
+                const response = await client.post('/chat/ask', {
+                    question: message,
+                    stream: false,
+                    return_paths: true
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="success">对话测试成功！</div>
+                    <div><strong>问题:</strong> ${response.data.question}</div>
+                    <div><strong>回答:</strong> ${response.data.answer}</div>
+                    <div><strong>模型:</strong> ${response.data.model}</div>
+                    <div><strong>响应时间:</strong> ${response.data.response_time} 秒</div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">对话测试失败！</div>
+                    <div>错误信息: ${error.message}</div>
+                    <div>详细信息: ${JSON.stringify(error.response?.data || {})}</div>
+                `;
+            }
+        }
+        
+        // 测试API连接
+        async function testApiConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.innerHTML = '<div>正在测试API连接...</div>';
+            
+            try {
+                const response = await client.get('/health');
+                resultDiv.innerHTML = '<div class="success">API连接测试成功！后端服务运行正常。</div>';
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">API连接测试失败！</div>
+                    <div>错误信息: ${error.message}</div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
